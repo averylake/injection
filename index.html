@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Injection; or, The Inevitability of Becoming a Piano Key</title>
+<meta name="description" content="Ten forms accumulate without end. You witness one at a time. You can only interrupt." />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#08080a; --ink:#f2f2f0; --dim:#6e6e72; --faint:#39393d;
+    --line:#f2f2f0; --edge:rgba(242,242,240,.18);
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  body.light{
+    --bg:#f4f4f2; --ink:#0d0d0f; --dim:#7b7b80; --faint:#c4c4c6;
+    --line:#0d0d0f; --edge:rgba(13,13,15,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%}
+  body{height:100dvh;overflow:hidden;background:var(--bg);color:var(--ink);
+       font-family:var(--mono);font-weight:300;display:flex;flex-direction:column;
+       transition:background .5s ease,color .5s ease}
+
+  header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:flex-start;
+         padding:16px 26px 4px;flex-wrap:wrap;gap:12px}
+  .ttl{font-size:16px;letter-spacing:.05em;line-height:1.3}
+  .sub{margin-top:5px;font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+  .counters{display:flex;gap:36px}
+  .c-lbl{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  .c-val{font-size:22px;margin-top:3px;font-variant-numeric:tabular-nums}
+
+  #stage{flex:1 1 0;min-height:0;position:relative;touch-action:none}
+  canvas#cv{display:block;width:100%;height:100%}
+
+  .chev{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:78px;
+        border:none;background:none;color:var(--dim);cursor:pointer;font-size:22px;
+        font-family:var(--mono);transition:color .25s;z-index:5}
+  .chev:hover{color:var(--line)}
+  #prev{left:6px} #next{right:6px}
+
+  #formname{position:absolute;left:0;right:0;bottom:34px;text-align:center;
+            font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+  #dots{position:absolute;left:0;right:0;bottom:14px;display:flex;gap:7px;
+        justify-content:center}
+  .dot{width:5px;height:5px;border:1px solid var(--edge);background:none;padding:0;
+       cursor:pointer;transition:.25s}
+  .dot.on{background:var(--line);border-color:var(--line)}
+  .dot.marked{border-color:var(--line)}
+
+  #cycle{flex:0 0 1px;height:1px;background:var(--edge);position:relative;margin:0 26px}
+  #cycle > span{position:absolute;left:0;top:0;bottom:0;background:var(--line);width:0}
+
+  footer{flex:0 0 auto;padding:10px 26px 14px;display:flex;justify-content:space-between;
+         align-items:flex-end;gap:14px;flex-wrap:wrap}
+  .note{font-size:10px;line-height:1.8;color:var(--dim);letter-spacing:.03em;max-width:52ch}
+  .note b{display:block;color:var(--faint);font-weight:300}
+  .tools{display:flex;gap:7px;flex-wrap:wrap}
+  .btn{padding:8px 12px;border:1px solid var(--edge);background:none;color:var(--dim);
+       font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+       cursor:pointer;transition:.25s;white-space:nowrap}
+  .btn:hover{border-color:var(--line);color:var(--line)}
+
+  @media (max-height:680px){
+    header{padding:10px 20px 2px} .ttl{font-size:14px} .sub{display:none}
+    .c-val{font-size:18px} footer{padding:8px 20px 10px} .note{display:none}
+  }
+  @media (max-width:640px){
+    header{padding:14px 18px 2px} .counters{gap:22px}
+    #cycle{margin:0 18px} footer{padding:10px 18px 14px} .note{display:none}
+  }
+
+  #arch{position:fixed;top:0;right:0;bottom:0;width:340px;max-width:90vw;
+        background:var(--bg);border-left:1px solid var(--edge);z-index:60;
+        transform:translateX(101%);transition:transform .35s ease;
+        display:flex;flex-direction:column}
+  #arch.open{transform:none}
+  .archhead{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
+            padding:20px 20px 12px}
+  .archhead h3{font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+               color:var(--dim);font-weight:400}
+  #arch-close{border:1px solid var(--edge);background:none;color:var(--dim);
+              font-family:var(--mono);font-size:13px;line-height:1;width:26px;height:26px;
+              cursor:pointer;transition:.25s}
+  #arch-close:hover{border-color:var(--line);color:var(--line)}
+  .archtools{flex:0 0 auto;padding:0 20px 12px;display:flex;gap:7px;flex-wrap:wrap;
+             align-items:center}
+  .archtools select,.archtools input{background:none;border:1px solid var(--edge);
+    color:var(--dim);font-family:var(--mono);font-size:9px;padding:6px 8px;
+    letter-spacing:.08em;text-transform:uppercase;outline:none;min-width:0}
+  .archtools input{text-transform:none;flex:1 1 70px}
+  .archstat{flex:0 0 auto;padding:0 20px 10px;font-size:9px;letter-spacing:.1em;
+            color:var(--faint);text-transform:uppercase}
+  #arch-list{flex:1 1 0;min-height:0;overflow-y:auto;padding:0 20px 20px}
+  .entry{display:flex;gap:13px;align-items:center;padding:12px 0;
+         border-top:1px solid var(--edge)}
+  .entry canvas{width:66px;height:66px;flex:0 0 auto;border:1px solid var(--edge);
+                cursor:pointer;background:none}
+  .entry .meta{font-size:9.5px;line-height:1.85;color:var(--dim);letter-spacing:.03em;
+               flex:1 1 0;min-width:0}
+  .entry .meta b{display:block;color:var(--ink);font-weight:400;font-size:11px;
+                 letter-spacing:.05em;margin-bottom:2px}
+  .mint{margin-top:5px;padding:4px 8px;border:1px solid var(--edge);background:none;
+        color:var(--dim);font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;
+        text-transform:uppercase;cursor:pointer;transition:.25s}
+  .mint:hover{border-color:var(--line);color:var(--line)}
+  .mint.done{border-color:var(--line);color:var(--line);cursor:default}
+  #more{width:100%;margin-top:14px}
+  .empty{font-size:10.5px;color:var(--faint);line-height:1.9;padding-top:12px}
+
+  #mintbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+           background:rgba(0,0,0,.86);z-index:80;padding:24px}
+  body.light #mintbox{background:rgba(244,244,242,.93)}
+  #mintbox.show{display:flex}
+  #mintbox .inner{border:1px solid var(--edge);background:var(--bg);padding:26px 28px;
+                  max-width:520px;width:100%;max-height:80vh;overflow:auto}
+  #mintbox h3{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);
+              font-weight:400;margin-bottom:16px}
+  #mintbox pre{font-family:var(--mono);font-size:10px;line-height:1.75;color:var(--ink);
+               white-space:pre-wrap;word-break:break-all}
+  .mintnote{font-size:10.5px;line-height:1.9;color:var(--dim);letter-spacing:.03em;
+            margin-bottom:16px}
+  #reqform{margin-top:16px;display:flex;flex-direction:column;gap:7px}
+  #reqform input,#reqform textarea{background:none;border:1px solid var(--edge);
+    color:var(--ink);font-family:var(--mono);font-size:11px;padding:9px 10px;
+    outline:none;resize:none}
+  #reqform input:focus,#reqform textarea:focus{border-color:var(--line)}
+  .rqerr{font-size:9.5px;letter-spacing:.06em;color:var(--dim);min-height:13px}
+  .mint.req{border-color:var(--line);color:var(--line)}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="ttl">Injection<span style="color:var(--dim)">; or, The Inevitability of Becoming a Piano Key</span></div>
+    <div class="sub">Ten forms are building. You can witness one at a time.</div>
+  </div>
+  <div class="counters">
+    <div><div class="c-lbl">Forms completed</div><div class="c-val" id="c-done">0</div></div>
+    <div><div class="c-lbl">Interruptions</div><div class="c-val" id="c-int">0</div></div>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <button class="chev" id="prev" aria-label="Previous form">‹</button>
+  <button class="chev" id="next" aria-label="Next form">›</button>
+  <div id="formname">circle</div>
+  <div id="dots"></div>
+</div>
+
+<div id="cycle"><span id="cycle-fill"></span></div>
+
+<footer>
+  <div class="note">
+    Draw on the form to interrupt it. The mark is not removed: the form keeps building and carries it.
+    <b>Swipe, or use ‹ › and the arrow keys, to move between forms. All ten continue either way.</b>
+  </div>
+  <div class="tools">
+    <button class="btn" id="b-arch">Archive</button>
+    <button class="btn" id="b-mode">Light</button>
+    <button class="btn" id="b-reset">Reset</button>
+  </div>
+</footer>
+
+<div id="arch">
+  <div class="archhead">
+    <h3>Archive of interruptions</h3>
+    <button id="arch-close" aria-label="Close archive">✕</button>
+  </div>
+  <div class="archtools">
+    <select id="f-form"><option value="">All forms</option></select>
+    <input id="f-q" placeholder="reference…" />
+    <button class="btn" id="b-export">Export all</button>
+    <button class="btn" id="b-load">Load 5000</button>
+  </div>
+  <div class="archstat" id="archstat"></div>
+  <div id="arch-list"><div class="empty">No interruptions yet.<br />The field is still only itself.</div></div>
+</div>
+
+<div id="mintbox"><div class="inner">
+  <h3 id="mint-title">Request minting</h3>
+  <p class="mintnote">
+    The artwork below already exists as a file and is yours to keep, free, whether or
+    not it is ever minted. Minting on a blockchain is done by the artist, on request,
+    for a personal collection. Send a request and Avery Lake will be in touch.
+  </p>
+  <pre id="mintjson"></pre>
+  <div id="reqform">
+    <input id="rq-name"  placeholder="Name" />
+    <input id="rq-email" placeholder="Email" type="email" />
+    <textarea id="rq-msg" rows="2" placeholder="Anything you want to say about this one (optional)"></textarea>
+    <div class="rqerr" id="rq-err"></div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" id="mint-req">Send request</button>
+    <button class="btn" id="mint-save">Save artwork (SVG + JSON)</button>
+    <button class="btn" id="mint-close">Close</button>
+  </div>
+</div></div>
+
+<script>
+/* ------------------------------------------------------------------
+   Injection; or, The Inevitability of Becoming a Piano Key  ·  Avery Lake, 2026
+
+   Ten forms build by ACCUMULATION: a base curve repeated many times,
+   each pass rotated slightly, so a figure only resolves into its
+   envelope near the end of its cycle. Nothing is beautiful at first.
+
+   All ten run continuously. Only one is ever on screen. The others
+   are not paused while you are not looking at them: phase derives
+   from a fixed epoch, so the field is a function of absolute time.
+
+   Drawing on a form embeds the gesture in that form's own coordinate
+   space. It is redrawn every cycle afterwards. The machine does not
+   stop and cannot return to true.
+   ------------------------------------------------------------------ */
+
+const EPOCH=Date.UTC(2026,7,4,0,0,0), BASE=5200, MASTER=12*BASE, TAU=Math.PI*2;
+const RATIOS=[1,2,3,4,6,12,2,4,3,6];
+
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const stage=document.getElementById('stage');
+let shapes=[], archive=[], current=0, INK='#f2f2f0';
+const readInk=()=>INK=getComputedStyle(document.body).getPropertyValue('--line').trim();
+
+/* ---------- accumulation ---------- */
+function rot(p,ax,a){const [x,y,z]=p,c=Math.cos(a),s=Math.sin(a);
+  if(ax==='x')return[x,y*c-z*s,y*s+z*c];
+  if(ax==='y')return[x*c-z*s,y,x*s+z*c];
+  return[x*c-y*s,x*s+y*c,z];}
+function accumulate(base,n,axis,step,seg=70){
+  const out=[];
+  for(let k=0;k<n;k++){const a=k*step,p=[];
+    for(let i=0;i<=seg;i++)p.push(rot(base(i/seg),axis,a)); out.push(p);}
+  return out;
+}
+const circleXY=r=>t=>[Math.cos(t*TAU)*r,Math.sin(t*TAU)*r,0];
+const circleOff=(R,r)=>t=>[R+Math.cos(t*TAU)*r,Math.sin(t*TAU)*r,0];
+const rose=k=>t=>{const a=t*TAU,rr=Math.cos(k*a);return[Math.cos(a)*rr,Math.sin(a)*rr,0];};
+const hypo=(R,r,d)=>t=>{const a=t*TAU*3,m=(R-r)/r;
+  return[((R-r)*Math.cos(a)+d*Math.cos(m*a))/(R+d),((R-r)*Math.sin(a)-d*Math.sin(m*a))/(R+d),0];};
+const liss=(a1,b1,ph)=>t=>[Math.sin(a1*t*TAU+ph),Math.sin(b1*t*TAU),Math.cos(a1*t*TAU)*.6];
+const harmo=()=>t=>{const a=t*TAU*3,d=Math.exp(-t*1.4);
+  return[Math.sin(a*2)*d,Math.sin(a*3+.7)*d,Math.sin(a*1.5)*d*.7];};
+const helixB=()=>t=>[Math.cos(t*TAU*2)*.8,Math.sin(t*TAU*2)*.8,(t-.5)*1.6];
+const square=()=>t=>{const s=t*4,i=Math.floor(s),f=s-i;
+  const c=[[-.8,-.8],[.8,-.8],[.8,.8],[-.8,.8],[-.8,-.8]],a=c[i%4],b=c[(i+1)%4];
+  return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,0];};
+const vesica=()=>t=>{const a=t*TAU;return[Math.cos(a)*.62+.28,Math.sin(a)*.62,0];};
+
+const FORMS=[
+  ['circle',       accumulate(circleXY(.95),   1,'z',0,          220)],
+  ['torus',        accumulate(circleOff(.6,.3),48,'y',TAU/48,     54)],
+  ['sphere',       accumulate(circleXY(.92),   34,'y',Math.PI/34, 66)],
+  ['rose',         accumulate(rose(3),         16,'z',TAU/64,    120)],
+  ['spirograph',   accumulate(hypo(5,3,5),     22,'z',TAU/22,    150)],
+  ['lissajous',    accumulate(liss(3,2,.6),    24,'y',TAU/48,    110)],
+  ['harmonograph', accumulate(harmo(),         20,'z',TAU/40,    140)],
+  ['helix bundle', accumulate(helixB(),        22,'z',TAU/22,     84)],
+  ['cube stack',   accumulate(square(),        30,'y',Math.PI/30, 56)],
+  ['vesica',       accumulate(vesica(),        28,'z',TAU/28,     62)]
+];
+
+function project(p,rx,ry,r){
+  let [x,y,z]=p;
+  let c=Math.cos(ry),s=Math.sin(ry);[x,z]=[x*c-z*s,x*s+z*c];
+  c=Math.cos(rx);s=Math.sin(rx);   [y,z]=[y*c-z*s,y*s+z*c];
+  const k=2.9/(2.9-z*.5);
+  return[x*k*r,y*k*r];
+}
+
+/* ---------- shared renderer (used by the stage AND the archive thumbs) ---------- */
+function renderForm(g,s,t,rx,ry,cx,cy,r,marks,thin){
+  const budget=t*s.total; let used=0;
+  g.save(); g.translate(cx,cy);
+  g.strokeStyle=INK; g.lineJoin='round'; g.lineCap='round';
+  g.lineWidth=thin?0.8:1; g.globalAlpha=thin?0.85:(0.30+0.34*t);
+  for(const st of s.strokes){
+    if(used>=budget) break;
+    const segs=Math.max(1,st.length-1), take=Math.min(segs,budget-used);
+    g.beginPath();
+    for(let i=0;i<=Math.ceil(take);i++){
+      const [X,Y]=project(st[Math.min(i,st.length-1)],rx,ry,r);
+      i?g.lineTo(X,Y):g.moveTo(X,Y);
+    }
+    g.stroke(); used+=segs;
+  }
+  if(marks && marks.length){
+    g.lineWidth=thin?1.4:1.8; g.globalAlpha=1;
+    for(const m of marks){
+      g.beginPath();
+      m.forEach((p,i)=>{const[X,Y]=project(p,rx,ry,r);i?g.lineTo(X,Y):g.moveTo(X,Y);});
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+
+/* ---------- layout ---------- */
+function build(keepMarks){
+  const old=keepMarks?shapes.map(s=>s.marks):null;
+  shapes=FORMS.map(([name,strokes],i)=>({
+    name,strokes,
+    total:strokes.reduce((a,st)=>a+Math.max(1,st.length-1),0),
+    period:BASE*RATIOS[i],
+    marks:old?(old[i]||[]):[]
+  }));
+  if(!keepMarks){archive=[];renderArchive();}
+  paintInt(); renderDots();
+}
+let CX=0,CY=0,RAD=0;
+function size(){
+  const dpr=window.devicePixelRatio||1,r=stage.getBoundingClientRect();
+  cv.width=Math.floor(r.width*dpr); cv.height=Math.floor(r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  CX=r.width/2; CY=r.height/2-14;
+  RAD=Math.min(r.width,r.height)*0.33;
+  readInk();
+}
+window.addEventListener('resize',()=>{size();});
+window.addEventListener('orientationchange',()=>setTimeout(size,150));
+
+/* ---------- loop ---------- */
+function frame(){
+  const wall=Date.now()-EPOCH, r=stage.getBoundingClientRect();
+  ctx.clearRect(0,0,r.width,r.height);
+
+  const mp=(wall%MASTER)/MASTER;
+  const rx=wall/47000*TAU, ry=wall/31000*TAU;
+
+  const s=shapes[current];
+  renderForm(ctx,s,(wall%s.period)/s.period,rx,ry,CX,CY,RAD,s.marks,false);
+
+  if(drag.active&&drag.pts.length>1){
+    ctx.save();ctx.strokeStyle=INK;ctx.lineWidth=1.8;ctx.globalAlpha=1;
+    ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.beginPath();drag.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+    ctx.stroke();ctx.restore();
+  }
+
+  let done=0; for(const q of shapes) done+=Math.floor(wall/q.period);
+  document.getElementById('c-done').textContent=done.toLocaleString();
+  document.getElementById('cycle-fill').style.width=(mp*100)+'%';
+  requestAnimationFrame(frame);
+}
+const paintInt=()=>document.getElementById('c-int').textContent=archive.length.toLocaleString();
+
+/* ---------- navigation ---------- */
+function go(d){
+  current=(current+d+shapes.length)%shapes.length;
+  document.getElementById('formname').textContent=shapes[current].name;
+  renderDots();
+}
+function renderDots(){
+  const el=document.getElementById('dots'); el.innerHTML='';
+  shapes.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='dot'+(i===current?' on':'')+(s.marks.length?' marked':'');
+    b.onclick=()=>{current=i;document.getElementById('formname').textContent=s.name;renderDots();};
+    el.appendChild(b);
+  });
+  document.getElementById('formname').textContent=shapes[current].name;
+}
+document.getElementById('prev').onclick=()=>go(-1);
+document.getElementById('next').onclick=()=>go(1);
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft')go(-1);
+  if(e.key==='ArrowRight')go(1);
+  if(e.key==='Escape')closeArch();
+});
+
+/* ---------- draw to interrupt / swipe to navigate ---------- */
+const drag={active:false,pts:[],swipe:false,x0:0};
+const ref=()=>{const c='0123456789ABCDEF';let s='';
+  for(let i=0;i<8;i++){s+=c[Math.floor(Math.random()*16)];if(i===3)s+='-';}return s;};
+const local=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+const inside=(x,y)=>Math.hypot(x-CX,y-CY)<=RAD*1.05;
+
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault(); cv.setPointerCapture(e.pointerId);
+  const [x,y]=local(e);
+  if(inside(x,y)){ drag.active=true; drag.swipe=false; drag.pts=[[x,y]]; }
+  else { drag.active=false; drag.swipe=true; drag.x0=x; }
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag.active) return;
+  const p=local(e);
+  // the mark stays within the form: it cannot span the screen
+  if(!inside(p[0],p[1])) return;
+  const last=drag.pts[drag.pts.length-1];
+  if(Math.hypot(p[0]-last[0],p[1]-last[1])>2.5) drag.pts.push(p);
+});
+function endDrag(e){
+  if(drag.swipe){
+    const [x]=local(e); const dx=x-drag.x0;
+    if(Math.abs(dx)>50) go(dx<0?1:-1);
+    drag.swipe=false; return;
+  }
+  if(!drag.active){drag.pts=[];return;}
+  drag.active=false;
+  const s=shapes[current];
+  if(drag.pts.length>2){
+    const wall=Date.now()-EPOCH;
+    const mark=drag.pts.map(([x,y])=>[(x-CX)/RAD,(y-CY)/RAD,0]);
+    s.marks.push(mark);
+    let done=0; for(const q of shapes) done+=Math.floor(wall/q.period);
+    archive.unshift({
+      formIndex:current, form:s.name,
+      t:(wall%s.period)/s.period,
+      rx:wall/47000*TAU, ry:wall/31000*TAU,
+      pct:((wall%s.period)/s.period*100).toFixed(1),
+      time:new Date().toISOString().replace('T',' ').slice(0,19),
+      hash:ref(), mark, done, status:null
+    });
+    paintInt(); renderArchive(); renderDots();
+  }
+  drag.pts=[];
+}
+cv.addEventListener('pointerup',endDrag);
+cv.addEventListener('pointercancel',endDrag);
+
+/* ---------- archive at scale ----------
+   Gestures are quantised to 12-bit ints and delta-encoded, so one
+   interruption is tens of bytes rather than a float array. Thumbnails
+   render lazily on scroll and the list pages, so an archive of tens of
+   thousands stays usable in a browser.                                */
+
+function encodeMark(mark){
+  const q=v=>Math.max(-2048,Math.min(2047,Math.round(v*1024)));
+  let out='', px=0, py=0;
+  for(const p of mark){
+    const x=q(p[0]), y=q(p[1]);
+    out+=String.fromCharCode((x-px)&0xFFF, (y-py)&0xFFF);
+    px=x; py=y;
+  }
+  return out;
+}
+const markBytes = m => encodeMark(m).length*2;
+
+function fmtBytes(n){
+  if(n<1024) return n+' B';
+  if(n<1048576) return (n/1024).toFixed(1)+' KB';
+  return (n/1048576).toFixed(2)+' MB';
+}
+
+let page=1; const PAGE=40;
+let thumbObserver=null;
+
+function filtered(){
+  const f=document.getElementById('f-form').value;
+  const q=document.getElementById('f-q').value.trim().toUpperCase();
+  return archive.filter(a=>(!f||a.form===f)&&(!q||a.hash.includes(q)));
+}
+
+function renderArchive(reset){
+  if(reset!==false) page=1;
+  const el=document.getElementById('arch-list');
+  const list=filtered();
+
+  // form filter options
+  const sel=document.getElementById('f-form');
+  const seen=[...new Set(archive.map(a=>a.form))].sort();
+  if(sel.options.length-1!==seen.length){
+    const keep=sel.value;
+    sel.innerHTML='<option value="">All forms</option>'+
+      seen.map(n=>`<option${n===keep?' selected':''}>${n}</option>`).join('');
+  }
+
+  const bytes=archive.reduce((s,a)=>s+markBytes(a.mark),0);
+  document.getElementById('archstat').textContent =
+    archive.length ? `${archive.length.toLocaleString()} records · ${fmtBytes(bytes)} · ${list.length.toLocaleString()} shown`
+                   : '';
+
+  if(!list.length){
+    el.innerHTML='<div class="empty">'+(archive.length
+      ? 'Nothing matches that filter.'
+      : 'No interruptions yet.<br />The field is still only itself.')+'</div>';
+    return;
+  }
+
+  if(thumbObserver) thumbObserver.disconnect();
+  thumbObserver=new IntersectionObserver(es=>{
+    for(const e of es){
+      if(!e.isIntersecting) continue;
+      const c=e.target;
+      if(c.dataset.done) continue;
+      c.dataset.done='1';
+      const a=list[+c.dataset.i];
+      const dpr=window.devicePixelRatio||1;
+      c.width=66*dpr; c.height=66*dpr;
+      const g=c.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+      renderForm(g, shapes[a.formIndex], a.t, a.rx, a.ry, 33, 33, 26, [a.mark], true);
+      thumbObserver.unobserve(c);
+    }
+  },{root:el,rootMargin:'260px'});
+
+  el.innerHTML='';
+  list.slice(0,page*PAGE).forEach((a,i)=>{
+    const row=document.createElement('div'); row.className='entry';
+
+    const c=document.createElement('canvas');
+    c.dataset.i=i;
+    c.onclick=()=>{current=a.formIndex;renderDots();closeArch();};
+    thumbObserver.observe(c);
+
+    const m=document.createElement('div'); m.className='meta';
+    m.innerHTML=`<b>${a.form}</b>interrupted at ${a.pct}% · ${a.hash}<br />
+                 ${a.time} UTC<br />
+                 <span style="color:var(--faint)">${a.done.toLocaleString()} forms completed by then</span>`;
+    const sb=document.createElement('button');
+    sb.className='mint'; sb.textContent='Save'; sb.style.marginRight='6px';
+    sb.onclick=ev=>{ev.stopPropagation();saveEntry(a);};
+    const mb=document.createElement('button');
+    mb.className='mint'+(a.status==='minted'?' done':a.status==='requested'?' req':'');
+    mb.textContent=a.status==='minted'?'Minted':a.status==='requested'?'Requested':'Request minting';
+    mb.onclick=ev=>{ev.stopPropagation();showMint(a,mb);};
+    m.appendChild(sb); m.appendChild(mb);
+
+    row.appendChild(c); row.appendChild(m); el.appendChild(row);
+  });
+
+  if(list.length>page*PAGE){
+    const b=document.createElement('button');
+    b.className='btn'; b.id='more';
+    b.textContent=`Load more (${(list.length-page*PAGE).toLocaleString()} remaining)`;
+    b.onclick=()=>{page++;renderArchive(false);};
+    el.appendChild(b);
+  }
+}
+
+/* ---------- the artwork as a file ----------
+   Each interruption is rendered to a deterministic SVG: the form
+   frozen at the moment it was interrupted, with the mark, plus the
+   record embedded in the file itself. The SVG is hashed with SHA-256.
+
+   That hash is the anchor. Minting on a chain is optional and comes
+   afterwards; the artwork exists as a file whether or not it is ever
+   minted, and the token, if there is one, points at this hash.       */
+
+const R2=n=>Math.round(n*100)/100;
+
+function buildSVG(a){
+  const s=shapes[a.formIndex], R=460, budget=a.t*s.total;
+  let used=0, paths='';
+  for(const st of s.strokes){
+    if(used>=budget) break;
+    const segs=Math.max(1,st.length-1), take=Math.min(segs,budget-used);
+    let d='';
+    for(let i=0;i<=Math.ceil(take);i++){
+      const [X,Y]=project(st[Math.min(i,st.length-1)],a.rx,a.ry,R);
+      d+=(i?'L':'M')+R2(X)+' '+R2(Y);
+    }
+    paths+=`<path d="${d}"/>`; used+=segs;
+  }
+  let marks='';
+  for(const m of [a.mark]){
+    let d='';
+    m.forEach((p,i)=>{const[X,Y]=project(p,a.rx,a.ry,R);d+=(i?'L':'M')+R2(X)+' '+R2(Y);});
+    marks+=`<path d="${d}" stroke-width="4"/>`;
+  }
+  const rec={work:"Injection; or, The Inevitability of Becoming a Piano Key",artist:"Avery Lake",year:2026,
+    form:a.form,interrupted_at:a.pct+"%",timestamp:a.time+"Z",reference:a.hash,
+    orientation:[+a.rx.toFixed(6),+a.ry.toFixed(6)],phase:+a.t.toFixed(6),
+    forms_completed_at_that_moment:a.done,
+    gesture:"q12:"+btoa(unescape(encodeURIComponent(encodeMark(a.mark))))};
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-560 -560 1120 1120" width="1120" height="1120">
+<title>${a.form} interrupted at ${a.pct}% — ${a.hash}</title>
+<desc>This form was not completed. It will not occur again.</desc>
+<metadata>${JSON.stringify(rec)}</metadata>
+<rect x="-560" y="-560" width="1120" height="1120" fill="#08080a"/>
+<g fill="none" stroke="#f2f2f0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.82">${paths}</g>
+<g fill="none" stroke="#f2f2f0" stroke-linecap="round" stroke-linejoin="round">${marks}</g>
+<text x="-520" y="522" fill="#6e6e72" font-family="monospace" font-size="17">${a.form} · interrupted at ${a.pct}% · ${a.hash} · ${a.time} UTC</text>
+</svg>`;
+}
+
+async function sha256Hex(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function download(name,text,type){
+  const b=new Blob([text],{type:type||'application/octet-stream'});
+  const u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(u),1500);
+}
+
+async function ensureHash(a){
+  if(!a.svg){ a.svg=buildSVG(a); a.artworkHash=await sha256Hex(a.svg); }
+  return a;
+}
+
+async function saveEntry(a){
+  await ensureHash(a);
+  const base=`INJ_${a.form.replace(/\s+/g,'-')}_${a.hash}`;
+  download(base+'.svg', a.svg, 'image/svg+xml');
+  download(base+'.json', JSON.stringify({
+    work:"Injection; or, The Inevitability of Becoming a Piano Key", artist:"Avery Lake", year:2026,
+    form:a.form, interrupted_at:a.pct+"%", timestamp:a.time+"Z",
+    reference:a.hash, artwork_file:base+'.svg',
+    artwork_sha256:a.artworkHash,
+    orientation:[+a.rx.toFixed(6),+a.ry.toFixed(6)], phase:+a.t.toFixed(6),
+    forms_completed_at_that_moment:a.done,
+    gesture_points:a.mark.length,
+    gesture:"q12:"+btoa(unescape(encodeURIComponent(encodeMark(a.mark)))),
+    note:"This form was not completed. It will not occur again."
+  },null,2), 'application/json');
+}
+
+function exportAll(){
+  const bundle={work:"Injection; or, The Inevitability of Becoming a Piano Key", artist:"Avery Lake",
+    exported:new Date().toISOString(), records:archive.length,
+    interruptions:archive.map(a=>({form:a.form, interrupted_at:a.pct+"%",
+      timestamp:a.time+"Z", reference:a.hash, phase:+a.t.toFixed(6),
+      orientation:[+a.rx.toFixed(6),+a.ry.toFixed(6)],
+      forms_completed_at_that_moment:a.done, mint_status:a.status||'not requested',
+      gesture:"q12:"+btoa(unescape(encodeURIComponent(encodeMark(a.mark))))}))};
+  download('archive-of-interruptions.json', JSON.stringify(bundle,null,2),'application/json');
+}
+
+/* ---------- minting is requested, not performed ----------
+   status: undefined → 'requested' → 'minted'
+   Only the artist can move a record to 'minted', and only by actually
+   minting it. The interruption is free; the file is free; permanence
+   is negotiated with a person.                                        */
+
+const ARTIST_EMAIL='hello@averylakeofficial.com';
+let mintTarget=null, mintBtn=null;
+
+async function showMint(a,btn){
+  await ensureHash(a);
+  mintTarget=a; mintBtn=btn||null;
+
+  document.getElementById('mint-title').textContent =
+    a.status==='minted' ? 'Minted' :
+    a.status==='requested' ? 'Minting requested' : 'Request minting';
+
+  document.getElementById('mintjson').textContent=JSON.stringify({
+    work:"Injection; or, The Inevitability of Becoming a Piano Key",
+    artist:"Avery Lake",
+    year:2026,
+    form:a.form,
+    interrupted_at:a.pct+"%",
+    timestamp:a.time+"Z",
+    reference:a.hash,
+    artwork_sha256:a.artworkHash,
+    artwork_media_type:"image/svg+xml",
+    artwork_bytes:new Blob([a.svg]).size,
+    forms_completed_at_that_moment:a.done,
+    mint_status:a.status||"not requested",
+    note:"This form was not completed. It will not occur again."
+  },null,2);
+
+  const req=document.getElementById('reqform');
+  const btnReq=document.getElementById('mint-req');
+  const already=a.status==='requested'||a.status==='minted';
+  req.style.display=already?'none':'flex';
+  btnReq.style.display=already?'none':'';
+  document.getElementById('rq-err').textContent='';
+  document.getElementById('mintbox').classList.add('show');
+  document.getElementById('mint-save').onclick=()=>saveEntry(a);
+}
+
+document.getElementById('mint-req').onclick=()=>{
+  const a=mintTarget; if(!a) return;
+  const name=document.getElementById('rq-name').value.trim();
+  const email=document.getElementById('rq-email').value.trim();
+  const msg=document.getElementById('rq-msg').value.trim();
+  const err=document.getElementById('rq-err');
+  if(!name||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+    err.textContent='A name and a valid email are needed so the artist can reply.';
+    return;
+  }
+  a.status='requested';
+  a.request={name,email,msg,sent:new Date().toISOString()};
+
+  // in the built work this posts to the artist; here it opens a prefilled message
+  const body=
+`Request to mint an interruption from Injection; or, The Inevitability of Becoming a Piano Key
+
+Form:        ${a.form}
+Interrupted: ${a.pct}% through its cycle
+Time:        ${a.time} UTC
+Reference:   ${a.hash}
+Artwork:     SHA-256 ${a.artworkHash}
+Context:     ${a.done.toLocaleString()} forms completed by the machine at that moment
+
+From: ${name} <${email}>
+${msg?'\n'+msg+'\n':''}`;
+  window.location.href='mailto:'+ARTIST_EMAIL
+    +'?subject='+encodeURIComponent('Minting request · '+a.form+' · '+a.hash)
+    +'&body='+encodeURIComponent(body);
+
+  if(mintBtn){ mintBtn.className='mint req'; mintBtn.textContent='Requested'; }
+  document.getElementById('reqform').style.display='none';
+  document.getElementById('mint-req').style.display='none';
+  document.getElementById('mint-title').textContent='Minting requested';
+  renderArchive(false);
+};
+
+document.getElementById('mint-close').onclick=()=>
+  document.getElementById('mintbox').classList.remove('show');
+document.getElementById('b-export').onclick=exportAll;
+
+document.getElementById('f-form').onchange=()=>renderArchive();
+document.getElementById('f-q').oninput=()=>renderArchive();
+
+/* stress test: what the archive looks like after a long run */
+document.getElementById('b-load').onclick=()=>{
+  const t0=performance.now();
+  for(let k=0;k<5000;k++){
+    const fi=Math.floor(Math.random()*shapes.length);
+    const n=8+Math.floor(Math.random()*40), mark=[];
+    let x=(Math.random()-.5)*.8, y=(Math.random()-.5)*.8;
+    for(let i=0;i<n;i++){x+=(Math.random()-.5)*.13;y+=(Math.random()-.5)*.13;
+      mark.push([Math.max(-1,Math.min(1,x)),Math.max(-1,Math.min(1,y)),0]);}
+    const tt=Math.random();
+    archive.push({formIndex:fi,form:shapes[fi].name,t:tt,
+      rx:Math.random()*TAU,ry:Math.random()*TAU,pct:(tt*100).toFixed(1),
+      time:new Date(Date.now()-Math.random()*3e10).toISOString().replace('T',' ').slice(0,19),
+      hash:ref(),mark,done:Math.floor(Math.random()*4e6),status:null});
+  }
+  paintInt(); renderArchive(); renderDots();
+  console.log('5000 records generated in',(performance.now()-t0).toFixed(0),'ms');
+};
+
+/* ---------- controls ---------- */
+const archEl=document.getElementById('arch');
+function openArch(){archEl.classList.add('open');document.getElementById('b-arch').textContent='Archive';}
+function closeArch(){archEl.classList.remove('open');}
+document.getElementById('b-arch').onclick=()=>archEl.classList.contains('open')?closeArch():openArch();
+document.getElementById('arch-close').onclick=closeArch;
+
+document.getElementById('b-mode').onclick=function(){
+  document.body.classList.toggle('light');
+  const light=document.body.classList.contains('light');
+  this.textContent=light?'Dark':'Light';
+  setTimeout(()=>{readInk();renderArchive();},60);
+};
+document.getElementById('b-reset').onclick=()=>build(false);
+
+build(false); size();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
